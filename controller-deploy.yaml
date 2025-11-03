@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: kube-system
+  name: intent-controller
+  labels:
+    app: multi-service-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: multi-service-controller
+  template:
+    metadata:
+      labels:
+        app: multi-service-controller
+    spec:
+      containers:
+      - name: controller
+        # This is where you specify the full image name
+        image: isaac74/idn-gnmi:v1.1.2

@@ -1,5 +1,3 @@
 kopf
-ncclient
-netmiko
 typing
-pygnmi 
+pygnmi

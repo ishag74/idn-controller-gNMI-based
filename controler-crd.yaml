@@ -145,6 +145,7 @@ spec:
       additionalPrinterColumns:
         - name: serviceName
           type: string
+          priority: 0
           jsonPath: .spec.serviceName
         - name: Type
           type: string
