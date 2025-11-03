@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Dict, Any, Tuple
 # Import the client that now handles multiple service types (VPLS, VPRN, ePip)
-from gnmi_client_v1 import gNMIClient as SshCliClient
+from gnmi_client_v1 import gNMIClient
 
 # Set up logging for the controller
 log = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def provision_or_update_slice(name: str, spec: Dict[str, Any], logger: kopf.Logg
             epipe_spec = dict(spec)
             epipe_spec['remote_sdpId'] = remote_endpoint.get('sdpId')
             
-            client = SshCliClient(router_name, local_endpoint, epipe_spec, logger)
+            client = gNMIClient(router_name, local_endpoint, epipe_spec, logger)
             
             try:
                 # Always enforce configuration on CREATE/UPDATE to match intent
@@ -69,7 +69,7 @@ def provision_or_update_slice(name: str, spec: Dict[str, Any], logger: kopf.Logg
             router_name = endpoint.get('routerName')
             if not router_name: continue
                 
-            client = SshCliClient(router_name, endpoint, spec, logger)
+            client = gNMIClient(router_name, endpoint, spec, logger)
 
             try:
                 # Always enforce configuration on CREATE/UPDATE to match intent
@@ -119,7 +119,7 @@ def drift_detection_check(name: str, spec: Dict[str, Any], patch: kopf.Patch, lo
         router_name = endpoint.get('routerName')
         if not router_name: continue
             
-        client = SshCliClient(router_name, endpoint, spec, logger)
+        client = gNMIClient(router_name, endpoint, spec, logger)
 
         try:
             # Check for drift
@@ -153,7 +153,6 @@ def drift_detection_check(name: str, spec: Dict[str, Any], patch: kopf.Patch, lo
     }
     
     # Use the injected 'patch' object as a dictionary to queue the status update
-    # FIX: Use patch['status'] = new_status instead of patch(status=new_status)
     patch['status'] = new_status
     logger.info(f"Periodic status update for {name} finished. Operational Status: {overall_operational_status}.")
 
@@ -178,7 +177,7 @@ def cleanup_network_slice(name: str, spec: Dict[str, Any], logger: kopf.Logger, 
         
         try:
             # Initialize client for deletion logic
-            client = SshCliClient(router_name, endpoint, spec, logger)
+            client = gNMIClient(router_name, endpoint, spec, logger)
             client.delete_config()
             logger.info(f"Successfully cleaned up {service_type} on {router_name}")
             
