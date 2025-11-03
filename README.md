@@ -19,13 +19,6 @@ This project provides a framework for interacting with network devices using the
    pip install -r requirements.txt
    ```
 
-## Usage
-
-To run the main application:
-```bash
-python main.py
-```
-
 ## Docker
 
 To build and run the application as a Docker container:
