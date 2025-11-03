@@ -1,0 +1,24 @@
+apiVersion: network.automation.io/v1
+kind: NetworkSlice
+metadata:
+  name: sample-epipe-slice
+  labels:
+    app: network-automation
+spec:
+  serviceName: "heartbeat"
+  serviceType: ePipe
+  serviceId: 60
+  description: "p2p-heartbeat-epipe-service"
+  priorityClass: "High"
+  bandwidthGuarantee: "500Mbps"
+  customer: 1000
+  adminState: "enable"
+  endpoints:
+    - routerName: "SR1"
+      interfaceName: "1/1/c4/1"
+      vlanID: 100
+      sdpId: 2
+    - routerName: "SR2"
+      interfaceName: "1/1/c4/1"
+      vlanID: 200
+      sdpId: 1

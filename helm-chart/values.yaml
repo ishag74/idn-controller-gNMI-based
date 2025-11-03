@@ -1,0 +1,12 @@
+rbac:
+  role:
+    name: intent-controller-role
+  roleBinding:
+    name: intent-controller-role-binding
+
+replicaCount: 1
+
+image:
+  repository: isaac74/idn
+  tag: v4.1.0
+  pullPolicy: IfNotPresent

@@ -1,0 +1,13 @@
+[project]
+name = "idn-gnmi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "kopf>=1.38.0",
+    "ncclient>=0.7.0",
+    "netmiko>=4.6.0",
+    "pygnmi>=0.8.15",
+    "typing>=3.10.0.0",
+]

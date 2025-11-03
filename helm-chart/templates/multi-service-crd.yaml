@@ -1,0 +1,174 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: networkslices.network.automation.io
+spec:
+  group: network.automation.io
+  names:
+    kind: NetworkSlice
+    listKind: NetworkSliceList
+    plural: networkslices
+    singular: networkslice
+    shortNames:
+      - nets
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              description: Defines the desired state (Intent) of the NetworkSlice, including service type and QoS parameters.
+              required:
+                - serviceName
+                - serviceType
+                - serviceId
+                - description
+                - endpoints
+                - priorityClass
+                - bandwidthGuarantee
+                - customer
+                - adminState
+              properties:
+                customer:
+                  type: integer
+                  description: The customer ID to associate the service with.
+                  minimum: 1
+                adminState:
+                  type: string
+                  description: The administrative state of the service.
+                  enum:
+                    - enable
+                    - disable
+                  default: enable
+                serviceType:
+                  type: string
+                  description: The type of network service to provision (VPLS, VPRN, or ePip).
+                  enum:
+                    - VPLS
+                    - VPRN
+                    - ePipe
+                serviceId:
+                  type: integer
+                  description: Unique identifier for the service (e.g., 5000, 5001).
+                  minimum: 1
+                description:
+                  type: string
+                  description: Human-readable description of the network slice purpose.
+                priorityClass:
+                  type: string
+                  description: Defines the QoS level (e.g., Critical, High, Standard).
+                  enum:
+                    - Critical
+                    - High
+                    - Standard
+                serviceName:
+                  type: string
+                  description: Human-readable name for the network service.
+                bandwidthGuarantee:
+                  type: string
+                  description: Committed bandwidth rate (e.g., "100Mbps", "1Gbps").
+                  pattern: '^\d+(Mbps|Gbps)$'
+                endpoints:
+                  type: array
+                  description: Minimum of two network interfaces and routers to be configured.
+                  minItems: 2
+                  items:
+                    type: object
+                    required:
+                      - routerName
+                      - interfaceName
+                    properties:
+                      routerName:
+                        type: string
+                        description: Hostname or IP of the target Nokia router.
+                      interfaceName:
+                        type: string
+                        description: Physical or logical port identifier (e.g., "1/1/1").
+                      vlanID:
+                        type: integer
+                        description: The customer VLAN tag (1-4094). Used for VPLS and ePip.
+                        minimum: 1
+                        maximum: 4094
+                      # VPRN specific fields
+                      ipAddress:
+                        type: string
+                        description: IP address/mask for the interface (e.g., 10.0.0.1/24). Required for VPRN.
+                        format: ipv4
+                      routerId:
+                        type: string
+                        description: The BGP Router ID to use for VPRN configuration. Required for VPRN.
+                        format: ipv4
+                      peerIpAddress:
+                        type: string
+                        description: The IP address of the BGP neighbor for VPRN configuration. Required for VPRN.
+                        format: ipv4
+                      # ePip specific fields
+                      sdpId:
+                        type: integer
+                        description: SDP ID used for Spoke SDP configuration. Required for ePip.
+                      #VPLS specific fields
+                      sdpType:
+                        type: string
+                        description: SDP encapsulation type for VPLS. 
+                        enum: [spoke, mesh]
+                        default: spoke
+            status: # This 'status' is a top-level property sibling to 'spec'
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+              description: Defines the observed state (Actual State) of the NetworkSlice.
+              properties:
+                status:
+                  type: string
+                  description: Provisioning status (e.g., "Ready", "InProgress", "Error").
+                message:
+                  type: string
+                  description: Details about the current status or errors.
+                provisionedEndpoints:
+                  type: object
+                  description: Key is RouterName, Value is provisioning status.
+                  additionalProperties:
+                    type: string
+                operationalStatus:
+                  type: string
+                  description: Aggregated operational status of the network slice (UP/DOWN/UNKNOWN).
+                lastReconciledTime:
+                  type: string
+                  format: date-time
+                  description: Timestamp of the last successful reconciliation.
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: serviceName
+          type: string
+          jsonPath: .spec.serviceName
+        - name: Type
+          type: string
+          jsonPath: .spec.serviceType
+        - name: ID
+          type: integer
+          jsonPath: .spec.serviceId
+        - name: Customer
+          type: integer
+          jsonPath: .spec.customer
+        - name: Admin State
+          type: string
+          jsonPath: .spec.adminState
+        - name: Priority
+          type: string
+          jsonPath: .spec.priorityClass
+        - name: Bandwidth
+          type: string
+          jsonPath: .spec.bandwidthGuarantee
+        - name: Status
+          type: string
+          jsonPath: .status.operationalStatus
+          priority: 0
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+          priority: 0

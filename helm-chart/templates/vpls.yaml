@@ -1,0 +1,26 @@
+apiVersion: network.automation.io/v1
+kind: NetworkSlice
+metadata:
+  name: sample-vpls-slice
+  labels:
+    app: network-automation
+spec:
+  serviceName: "VPLS-Service-01"
+  serviceType: VPLS
+  serviceId: 7001
+  description: "A sample VPLS service"
+  priorityClass: "Standard"
+  bandwidthGuarantee: "1Gbps"
+  customer: 101
+  adminState: "enable"
+  sdpType: "mesh"
+  endpoints:
+    - routerName: "SR1"
+      interfaceName: "1/1/c1/2"
+      vlanID: 300
+    - routerName: "SR2"
+      interfaceName: "1/1/c2/2"
+      vlanID: 400
+    - routerName: "SR3"
+      interfaceName: "1/1/c3/1"
+      vlanID: 500

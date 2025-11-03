@@ -1,0 +1,26 @@
+apiVersion: network.automation.io/v1
+kind: NetworkSlice
+metadata:
+  name: sample-vprn-slice
+  labels:
+    app: network-automation
+spec:
+  serviceName: "VPRN-Service-01"
+  serviceType: VPRN
+  serviceId: 8001
+  description: "A sample VPRN service"
+  priorityClass: "Critical"
+  bandwidthGuarantee: "10Gbps"
+  customer: 102
+  adminState: "enable"
+  endpoints:
+    - routerName: "SR3"
+      interfaceName: "1/1/c3/2"
+      vlanID: 600
+      ipAddress: "10.1.1.1/30"
+      routerId: "192.168.3.3"
+    - routerName: "SR4"
+      interfaceName: "1/1/c4/1"
+      vlanID: 700
+      ipAddress: "10.1.1.2/30"
+      routerId: "192.168.4.4"
