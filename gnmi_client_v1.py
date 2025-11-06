@@ -288,7 +288,7 @@ class gNMIClient:
             response = client.get(path=[path], encoding='JSON_IETF')
             
             try:
-                oper_state = response["notification"][0]["update"][0]["val"]["nokia-state:oper-state"]
+                oper_state = response["notification"][0]["update"][0]["val"]
                 return oper_state.upper()
             except (IndexError, KeyError):
                 self.logger.warning(f"❌ Could not determine operational status for service {self.service_id} on {self.router_name}.")
