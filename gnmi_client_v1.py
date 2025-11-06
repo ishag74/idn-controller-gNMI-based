@@ -63,17 +63,31 @@ class gNMIClient:
             self.logger.error(f"Failed to connect to gNMI target {self.router_name}: {e}")
             raise
 
-    def _get_vpls_payload(self) -> Dict[str, Any]:
+    def _get_base_service_payload(self) -> Dict[str, Any]:
         """
-        Builds the structured JSON payload for a VPLS service.
+        Builds the common structured JSON payload for any service.
         """
-        sdp_type = 'mesh-sdp' if self.slice_spec.get('vplsType', 'mesh-sdp') == 'mesh-sdp' else 'spoke-sdp'
-        
-        payload_data = {
+        return {
             "admin-state": f"{self.slice_spec.get('adminState', 'enable')}",
             "description": self.description,
             "customer": self.customer_id,
             "service-id": self.service_id,
+        }
+
+    def _get_service_update_path(self, service_type: str) -> str:
+        """
+        Generates the gNMI update path for a given service type.
+        """
+        return f"/configure/service/{service_type.lower()}[service-name={self.service_name}]"
+
+    def _get_vpls_payload(self) -> Dict[str, Any]:
+        """
+        Builds the structured JSON payload for a VPLS service.
+        """
+        payload_data = self._get_base_service_payload()
+        sdp_type = 'mesh-sdp' if self.slice_spec.get('vplsType', 'mesh-sdp') == 'mesh-sdp' else 'spoke-sdp'
+        
+        payload_data.update({
             sdp_type: [{
                 "sdp-bind-id": f"{self.endpoint_spec.get('sdpId', 1000)}:{self.service_id}"
             }],
@@ -81,9 +95,9 @@ class gNMIClient:
                 "sap-id": f"{self.endpoint_spec.get('interfaceName')}:{self.endpoint_spec.get('vlanID')}",
                 "admin-state": "enable"
             }]
-        }
+        })
         
-        update_path = f"/configure/service/vpls[service-name={self.service_name}]"
+        update_path = self._get_service_update_path('VPLS')
         
         updates = [(update_path, payload_data)]
         
@@ -93,14 +107,12 @@ class gNMIClient:
         """
         Builds the structured JSON payload for a VPRN service.
         """
+        payload_data = self._get_base_service_payload()
         interface_name = self.endpoint_spec.get('interfaceName')
         vlan_id = self.endpoint_spec.get('vlanID')
         ip_address = self.endpoint_spec.get('ipAddress', '10.0.0.1/30')
         
-        payload_data = {
-            "customer": self.customer_id,
-            "description": self.description,
-            "service-id": self.service_id,
+        payload_data.update({
             "router-id": self.slice_spec.get('routerId'),
             "interface": [{
                 "interface-name": f"{interface_name}{vlan_id}",
@@ -126,9 +138,9 @@ class gNMIClient:
                 }
               }
             }
-        }
+        })
         
-        update_path = f"/configure/service/vprn[service-id={self.service_name}]"
+        update_path = self._get_service_update_path('VPRN')
         
         updates = [(update_path, payload_data)]
         
@@ -138,12 +150,8 @@ class gNMIClient:
         """
         Builds the structured JSON payload for an EPIPE service.
         """
-        # Build the payload       
-        payload_data = {
-            "admin-state": "enable",
-            "customer": self.customer_id,
-            "service-id": self.service_id,
-            "description": self.description,
+        payload_data = self._get_base_service_payload()
+        payload_data.update({
             "sap": [
                 {
                 "sap-id": f"{self.endpoint_spec.get('interfaceName')}:{self.endpoint_spec.get('vlanID')}"
@@ -152,12 +160,12 @@ class gNMIClient:
             "spoke-sdp": {
                 "sdp-bind-id": f"{self.endpoint_spec.get('sdpId', 1000)}:{self.service_id}"
             }
-        }
-        # Define the update path
-        update_path = f"/configure/service/epipe[service-name={self.service_name}]"
+        })
+        
+        update_path = self._get_service_update_path('ePipe')
         
         updates = [(update_path, payload_data)]
-        # Return the updates
+        
         return updates
 
     def apply_config(self) -> None:
@@ -176,7 +184,7 @@ class gNMIClient:
             raise NotImplementedError(f"Unsupported service type: {self.service_type}")
 
         with self._connect() as client:
-            self.logger.info(f"⏱ Attempting gNMI Set Update on {self.router_name}...")
+            self.logger.info(f"🕖 Attempting gNMI Set Update on {self.router_name}...")
             response = client.set(update=updates)
             if "error" not in response:
                 self.logger.info("✅ gNMI Set Update successful.")
@@ -212,10 +220,10 @@ class gNMIClient:
             
             self.logger.info(f"🕗 Retrieving config for service {self.service_id} from {self.router_name}...")
             response = client.get(path=[path], encoding='JSON_IETF')
-            if (response[0]["updates"][0] and
-                response[0]["updates"][0]["values"]):
+            if (response['notification'][0] and
+                response['notification'][0]['update'][0]):
                 
-                return response[0]["updates"][0]["values"][path]
+                return response['notification'][0]['update'][0]['val']
             else:
                 self.logger.warning(f"⛔ No configuration found for service {self.service_id} on {self.router_name}.")
                 return "{}"
@@ -225,32 +233,33 @@ class gNMIClient:
         Compares the desired state (CRD spec) against the observed state (gNMI output).
         """
         self.logger.debug(f"🔄 Comparing desired vs observed state for {self.service_type}...")
-        
+
+        """"  
         try:
             observed_json = json.loads(observed_config)
         except json.JSONDecodeError:
             self.logger.warning(f"⛔ Could not decode observed config for service ID {self.service_id}.")
             return True
-
+        """
         drift_detected = False
         
         # Check Description
         desired_description = self.description
-        observed_description = observed_json.get("description")
+        observed_description = observed_config.get("nokia-conf:description")
         if observed_description != desired_description:
             self.logger.warning(f"❌ Drift detected: Description mismatch for service ID {self.service_id}. Desired: '{desired_description}', Observed: '{observed_description}'")
             drift_detected = True
         
         # Check Admin State
         desired_admin_state = f"{self.slice_spec.get('adminState', 'enable')}"
-        observed_admin_state = observed_json.get("admin-state")
+        observed_admin_state = observed_config.get("nokia-conf:admin-state")
         if observed_admin_state != desired_admin_state:
             self.logger.warning(f"❌ Drift detected: Admin State mismatch for service ID {self.service_id}. Desired: '{desired_admin_state}', Observed: '{observed_admin_state}'")
             drift_detected = True
 
         # Check SAP
         desired_sap = f"{self.endpoint_spec.get('interfaceName')}:{self.endpoint_spec.get('vlanID')}"
-        observed_saps = observed_json.get("sap", [])
+        observed_saps = observed_config.get("nokia-conf:sap", [])
         
         sap_found = False
         for sap in observed_saps:
