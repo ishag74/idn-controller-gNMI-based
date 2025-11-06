@@ -280,7 +280,7 @@ class gNMIClient:
         """
         with self._connect() as client:
 
-            path = f"state/service/{self.service_type}[service-name={self.service_name}]/oper-state"
+            path = f"state/service/{self.service_type.lower()}[service-name={self.service_name}]/oper-state"
             
             values_key = f"state/service/{self.service_type.lower()}/oper-state"
             
