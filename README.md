@@ -1,4 +1,4 @@
-# gNMI Network Automation Controller for Kubernetes
+# Intent Driven Network Automation Controller
 
 This project implements a Kubernetes operator to declaratively manage network services on Nokia SR OS routers using the gNMI protocol. It brings cloud-native automation principles to network infrastructure, enabling you to manage network configurations the same way you manage Kubernetes applications.
 
