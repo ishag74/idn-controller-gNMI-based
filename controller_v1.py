@@ -104,7 +104,7 @@ def drift_detection_check(name: str, spec: Dict[str, Any], patch: kopf.Patch, lo
     Performs a periodic check (drift detection, operational status) without
     re-running the full provisioning logic if nothing has changed.
     """
-    logger.info(f"--- Running drift detection cycle for {name} (Service: {spec.get('serviceType')}) ---")
+    logger.info(f"---🔁 Running drift detection cycle for {name} (Service: {spec.get('serviceType')}) ---")
     
     service_type = spec.get('serviceType')
     endpoints = spec.get('endpoints', [])
@@ -139,7 +139,7 @@ def drift_detection_check(name: str, spec: Dict[str, Any], patch: kopf.Patch, lo
                 overall_operational_status = "DOWN"
 
         except Exception as e:
-            logger.error(f"Error during drift check for {service_type} on {router_name}: {e}")
+            logger.error(f"⛔ Error during drift check for {service_type} on {router_name}: {e}")
             provisioned_endpoints[router_name] = f"Error during drift check: {str(e)}"
             # If any endpoint fails the check, mark overall status as down/error
             overall_operational_status = "ERROR"
@@ -173,16 +173,16 @@ def cleanup_network_slice(name: str, spec: Dict[str, Any], logger: kopf.Logger, 
         if not router_name:
             continue
             
-        logger.info(f"Attempting de-provisioning of {service_type} on router: {router_name}")
+        logger.info(f"🕖 Attempting de-provisioning of {service_type} on router: {router_name}")
         
         try:
             # Initialize client for deletion logic
             client = gNMIClient(router_name, endpoint, spec, logger)
             client.delete_config()
-            logger.info(f"Successfully cleaned up {service_type} on {router_name}")
+            logger.info(f"✅ Successfully cleaned up {service_type} on {router_name}")
             
         except Exception as e:
-            logger.error(f"Failed to clean up {service_type} configuration on {router_name}: {e}")
+            logger.error(f"❌ Failed to clean up {service_type} configuration on {router_name}: {e}")
             success = False
             
     if success:
