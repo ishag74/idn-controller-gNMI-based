@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, Any, List
 from pygnmi.client import gNMIclient
 import logging
@@ -7,13 +8,6 @@ class gNMIClient:
     """
     A gNMI client for Nokia SR OS devices.
     """
-
-    ROUTER_CREDS = {
-        "SR1": {"host": "192.168.18.111", "port": 57400, "user": "admin", "pass": "admin"},
-        "SR2": {"host": "192.168.18.121", "port": 57400, "user": "admin", "pass": "admin"},
-        "SR3": {"host": "192.168.18.133", "port": 57400, "user": "admin", "pass": "admin"},
-        "SR4": {"host": "192.168.18.144", "port": 57400, "user": "admin", "pass": "admin"},
-    }
 
     def __init__(self, router_name: str, endpoint_spec: Dict[str, Any], slice_spec: Dict[str, Any], logger: logging.Logger):
         self.router_name = router_name
@@ -25,13 +19,29 @@ class gNMIClient:
         self.service_type = slice_spec.get('serviceType')
         self.service_id = slice_spec.get('serviceId', 'N/A')
         self.service_name = slice_spec.get('serviceName', f"{self.service_type}_{self.service_id}")
-        self.creds = self.ROUTER_CREDS.get(router_name)
+        self.creds = self._get_creds_from_env(router_name)
         self.description = slice_spec.get('description', f"Service {self.service_type} {self.service_id}")
         
     
 
         if not self.service_type:
             self.logger.warning("Service type is missing in the NetworkSlice spec.")
+
+    def _get_creds_from_env(self, router_name: str) -> Dict[str, Any]:
+        """
+        Retrieves credentials for a given router from environment variables.
+        """
+        creds = {
+            "host": os.getenv(f"{router_name}_HOST"),
+            "port": int(os.getenv(f"{router_name}_PORT", 57400)),
+            "user": os.getenv(f"{router_name}_USER"),
+            "pass": os.getenv(f"{router_name}_PASS"),
+        }
+        if not all(creds.values()):
+            self.logger.error(f"Missing one or more environment variables for {router_name}. "
+                              f"Required: {router_name}_HOST, {router_name}_USER, {router_name}_PASS.")
+            raise ValueError(f"Missing credentials for {router_name}")
+        return creds
     
     def _connect(self) -> gNMIclient:
         """

@@ -19,3 +19,6 @@ spec:
       - name: controller
         # This is where you specify the full image name
         image: isaac74/idn-gnmi:v1.1.2
+        envFrom:
+        - secretRef:
+            name: router-credentials
